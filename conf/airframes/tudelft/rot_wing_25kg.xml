@@ -104,6 +104,8 @@
             <configure value="TRUE" name="UAVCAN_USE_CAN1"/>
             <configure value="TRUE" name="UAVCAN_USE_CAN2"/>
         </module>
+        <!-- Rotation mechanism actuator on UART -->
+        <module name="actuators" type="faulhaber"/>
 
         <!-- Control -->
         <module name="stabilization" type="indi">
