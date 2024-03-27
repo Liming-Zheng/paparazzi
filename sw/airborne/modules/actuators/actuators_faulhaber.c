@@ -28,6 +28,7 @@
 #include "mcu_periph/uart.h"
 #include "mcu_periph/sys_time.h"
 #include "modules/datalink/downlink.h"
+#include "modules/core/abi.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -155,6 +156,7 @@ void actuators_faulhaber_init(void) {
 
   faulhaber.mode = FH_MODE_INIT;
   faulhaber.state = 0;
+  faulhaber.setpoint_position = 0;
   faulhaber.target_position = 0;
 }
 
@@ -212,6 +214,7 @@ void actuators_faulhaber_periodic(void) {
         }
         case 1: {
           // Set the target position
+          faulhaber.target_position = faulhaber.setpoint_position;
           uint8_t data[] = { 0x7A, 0x60, 0x00, (faulhaber.target_position & 0xFF), ((faulhaber.target_position >> 8) & 0xFF), ((faulhaber.target_position >> 16) & 0xFF), ((faulhaber.target_position >> 24) & 0xFF) }; // Set 0x607A.00 to 0x00000000:  Target position 0
           faulhaber_send_command(faulhaber_dev, 0x02, data, 7);
           faulhaber.state++;
@@ -241,11 +244,56 @@ void actuators_faulhaber_periodic(void) {
 
     /* FH_MODE_IDLE */
     case FH_MODE_IDLE: {
+      // Move to the new position
+      if(faulhaber.target_position != faulhaber.setpoint_position) {
+        faulhaber.mode = FH_MODE_POSITION;
+        faulhaber.state = 0;
+        break;
+      }
+
+      // Request the position
       uint8_t data[] = { 0x64, 0x60, 0x00}; // Get 0x6064.00: Get the actual position
       faulhaber_send_command(faulhaber_dev, 0x01, data, 3);
       faulhaber.state = 0;
       break;
     }
+
+    case FH_MODE_ENABLE:
+      switch(faulhaber.state) {
+        case 0: {
+          // Disable drive
+          uint8_t data[] = { 0x40, 0x60, 0x00, 0x80, 0x00}; // Set 0x6040.00 to 0x0007: Disable drive
+          faulhaber_send_command(faulhaber_dev, 0x02, data, 5);
+          faulhaber.state++;
+          break;
+        }
+        case 1: {
+          // Disable drive
+          uint8_t data[] = { 0x40, 0x60, 0x00, 0x06, 0x00}; // Set 0x6040.00 to 0x0006: Disable drive
+          faulhaber_send_command(faulhaber_dev, 0x02, data, 5);
+          faulhaber.state++;
+          break;
+        }
+        case 2: {
+          // Enable drive
+          uint8_t data[] = { 0x40, 0x60, 0x00, 0x07, 0x00}; // Set 0x6040.00 to 0x0007: Enable drive
+          faulhaber_send_command(faulhaber_dev, 0x02, data, 5);
+          faulhaber.state++;
+          break;
+        }
+        case 3: {
+          // Execute
+          uint8_t data[] = { 0x40, 0x60, 0x00, 0x0F, 0x00}; // Set 0x6040.00 to 0x000F: Execute
+          faulhaber_send_command(faulhaber_dev, 0x02, data, 5);
+          faulhaber.state++;
+          break;
+        }
+        default:
+          faulhaber.mode = FH_MODE_IDLE;
+          faulhaber.state = 0;
+          break;
+      }
+      break;
 
     /* Do nothing */
     default:
@@ -255,8 +303,17 @@ void actuators_faulhaber_periodic(void) {
 }
 
 static void faulhaber_parse_msg(struct faulhaber_parser_t *p) {
+  // Process position message
   if(p->cmd_code == 0x01 && p->data[0] == 0x64 && p->data[1] == 0x60 && p->data[2] == 0x00) {
     faulhaber.real_position = p->data[3] | (p->data[4] << 8) | (p->data[5] << 16) | (p->data[6] << 24);
+
+    struct act_feedback_t feedback = {0};
+    feedback.position = (faulhaber.real_position - get_servo_min_FAULHABER(0)) / (double)(get_servo_max_FAULHABER(0) - get_servo_min_FAULHABER(0)) * M_PI_2; // In radians
+    feedback.set.position = true;
+    feedback.idx = get_servo_idx_FAULHABER(0);
+
+    // Send ABI message
+    AbiSendMsgACT_FEEDBACK(ACT_FEEDBACK_FAULHABER_ID, &feedback, 1);
   }
 }
 

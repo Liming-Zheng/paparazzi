@@ -46,7 +46,7 @@ static void send_actuators(struct transport_tx *trans, struct link_device *dev)
 }
 #endif
 
-int16_t actuators[ACTUATORS_NB];
+int32_t actuators[ACTUATORS_NB];
 
 // Can be used to directly control each actuator from the control algorithm
 int16_t actuators_pprz[ACTUATORS_NB];

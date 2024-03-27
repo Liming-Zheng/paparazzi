@@ -33,13 +33,15 @@ enum faulhaber_modes_t {
   FH_MODE_INIT,
   FH_MODE_IDLE,
   FH_MODE_HOME,
-  FH_MODE_POSITION
+  FH_MODE_POSITION,
+  FH_MODE_ENABLE
 };
 
 struct faulhaber_t {
   enum faulhaber_modes_t mode;
   uint8_t state;
 
+  int32_t setpoint_position;
   int32_t target_position;
   int32_t real_position;
 };
@@ -48,7 +50,17 @@ extern struct faulhaber_t faulhaber;
 extern void actuators_faulhaber_init(void);
 extern void actuators_faulhaber_periodic(void);
 extern void actuators_faulhaber_event(void);
-
 extern void actuators_faulhaber_SetMode(uint8_t mode);
+
+
+#if USE_NPS
+#define ActuatorsFaulhaberInit() {}
+#define ActuatorFaulhaberSet(_i, _v) {}
+#define ActuatorsFaulhaberCommit()  {}
+#else
+#define ActuatorsFaulhaberInit() actuators_faulhaber_init()
+#define ActuatorFaulhaberSet(_i, _v) { faulhaber.setpoint_position = get_servo_max_FAULHABER(0)-_v; }
+#define ActuatorsFaulhaberCommit()  {}
+#endif
 
 #endif /* ACTUATORS_FAULHABER_H */

@@ -60,7 +60,7 @@ extern bool   actuators_delay_done;
 /** Actuators array.
  * Temporary storage (for debugging purpose, downlinked via telemetry)
  * */
-extern int16_t actuators[ACTUATORS_NB];
+extern int32_t actuators[ACTUATORS_NB];
 
 /** PPRZ command to each actuator
  * Can be used to directly control actuators from the control algorithm
