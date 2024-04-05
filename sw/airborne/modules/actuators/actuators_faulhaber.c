@@ -197,7 +197,7 @@ void actuators_faulhaber_periodic(void) {
         }
         default:
           // Goto position mode
-          faulhaber.mode = FH_MODE_IDLE;
+          faulhaber.mode = FH_MODE_INIT;
           faulhaber.state = 0;
           break;
       }
@@ -265,31 +265,31 @@ void actuators_faulhaber_periodic(void) {
           uint8_t data[] = { 0x40, 0x60, 0x00, 0x80, 0x00}; // Set 0x6040.00 to 0x0007: Disable drive
           faulhaber_send_command(faulhaber_dev, 0x02, data, 5);
           faulhaber.state++;
-          break;
+          //break;
         }
         case 1: {
           // Disable drive
           uint8_t data[] = { 0x40, 0x60, 0x00, 0x06, 0x00}; // Set 0x6040.00 to 0x0006: Disable drive
           faulhaber_send_command(faulhaber_dev, 0x02, data, 5);
           faulhaber.state++;
-          break;
+          //break;
         }
         case 2: {
           // Enable drive
           uint8_t data[] = { 0x40, 0x60, 0x00, 0x07, 0x00}; // Set 0x6040.00 to 0x0007: Enable drive
           faulhaber_send_command(faulhaber_dev, 0x02, data, 5);
           faulhaber.state++;
-          break;
+          //break;
         }
         case 3: {
           // Execute
           uint8_t data[] = { 0x40, 0x60, 0x00, 0x0F, 0x00}; // Set 0x6040.00 to 0x000F: Execute
           faulhaber_send_command(faulhaber_dev, 0x02, data, 5);
           faulhaber.state++;
-          break;
+          //break;
         }
         default:
-          faulhaber.mode = FH_MODE_IDLE;
+          faulhaber.mode = FH_MODE_INIT;
           faulhaber.state = 0;
           break;
       }
